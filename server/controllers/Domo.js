@@ -1,28 +1,15 @@
 const models = require('../models');
+const DomoModel = require('../models/Domo');
 
 const { Domo } = models;
 
 // Render the domo maker page
-const makerPage = (req, res) => {
-  Domo.findByOwner(req.session.account._id, (err, docs) => {
-    if (err) {
-      console.log(err);
-      return res.status(400).json({ error: 'An error has occured!' });
-    }
-
-    return res.render('app', { csrfToken: req.csrfToken(), domos: docs });
-  });
-};
+const makerPage = (req, res) => res.render('app');
 
 // Create a new Domo object in the database if it does not already exist
 const makeDomo = async (req, res) => {
   if (!req.body.name || !req.body.age) {
     return res.status(400).json({ error: 'Both name and age are required!' });
-  }
-
-  // make sure the age is actually a number
-  if (!parseInt(req.body.age, 10)) {
-    return res.status(400).json({ error: 'Age must be a numerical value!' });
   }
 
   const domoData = {
@@ -34,7 +21,7 @@ const makeDomo = async (req, res) => {
   try {
     const newDomo = new Domo(domoData);
     await newDomo.save();
-    return res.json({ redirect: '/maker' });
+    return res.status(201).json({ name: newDomo.name, age: newDomo.age });
   } catch (err) {
     console.log(err);
     if (err.code === 11000) {
@@ -44,7 +31,17 @@ const makeDomo = async (req, res) => {
   }
 };
 
+const getDomos = (req, res) => DomoModel.findByOwner(req.session.account._id, (err, docs) => {
+  if (err) {
+    console.log(err);
+    return res.status(400).json({ error: 'An error occurred! ' });
+  }
+
+  return res.json({ domos: docs });
+});
+
 module.exports = {
   makerPage,
   makeDomo,
+  getDomos,
 };
