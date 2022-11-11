@@ -62,6 +62,48 @@ const signup = async (req, res) => {
   }
 };
 
+// render the settings page
+const settingsPage = (req, res) => {
+  res.render('settings', { csrfToken: req.csrfToken() });
+};
+
+// Changes user's password
+const changePass = async (req, res) => {
+  // to change their password, the user must type their old password in
+  // then then add/retype their new password
+  const username = `${req.body.username}`;
+  const oldPass = `${req.body.oldPassword}`;
+  const newPass = `${req.body.newPassword}`;
+  const newPass2 = `${req.body.newPassword2}`;
+
+  // Make sure all params are filled out
+  if (!username || !oldPass || !newPass || !newPass2) {
+    return res.status(400).json({ error: 'Missing required parameters!' });
+  }
+
+  // Assuming the user has made it this far, attempt to change the password
+  try {
+    // get a reference to the current account
+    const oldAccount = await Account.findOne({ username }).exec();
+
+    // If no account is found, return a 404
+    if (!oldAccount) {
+      return res.status(404).json({ error: 'Username not found' });
+    }
+
+    // set the new password to the new hash
+    oldAccount.password = await Account.generateHash(newPass);
+
+    // update the entry in the database
+    await oldAccount.save();
+
+    return res.status(201).json({ redirect: '/logout' });
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({ error: 'An error occured.' });
+  }
+};
+
 // generates a new CSRF token on request
 const getToken = (req, res) => res.json({ csrfToken: req.csrfToken() });
 
@@ -70,5 +112,7 @@ module.exports = {
   login,
   logout,
   signup,
+  settingsPage,
+  changePass,
   getToken,
 };
